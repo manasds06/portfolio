@@ -1,0 +1,537 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
+  --color-paper: #d8d8d4;
+  --color-ink: #0c0c0c;
+  --color-dim: #4a4a47;
+  --color-rule: #b3b3ae;
+}
+
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --paper: #d8d8d4;
+  --ink: #0c0c0c;
+  /* the accent: a deep electric purple, ghost-type, that glows on black */
+  --ring: #8a2be2;
+  --ring-glow: rgb(160 60 255 / 0.65);
+}
+
+html,
+body {
+  height: 100%;
+  background: #000;
+  color: #fff;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+/* purple marks what you touch: selection, focus, a caught dot */
+::selection {
+  background: var(--ring);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+.serif {
+  font-family: var(--font-display), "Century Schoolbook", Georgia, serif;
+}
+
+/* the page hides the system cursor wherever ours can stand in for it */
+@media (hover: hover) and (pointer: fine) {
+  .stage,
+  .stage * {
+    cursor: none !important;
+  }
+}
+
+/* ───────────── cursor ───────────── */
+
+.cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  border: 2px solid var(--ring);
+  /* a little neon bloom around the ring */
+  box-shadow:
+    0 0 6px var(--ring-glow),
+    inset 0 0 4px var(--ring-glow);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    width 180ms var(--ease-out),
+    height 180ms var(--ease-out),
+    margin 180ms var(--ease-out),
+    background-color 180ms ease,
+    opacity 200ms ease;
+}
+.cursor[data-on="true"] {
+  opacity: 1;
+}
+/* over something you can open, or held by a dot: the ring closes to a filled point */
+.cursor[data-mode="link"] {
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  background: var(--ring);
+}
+/* the instant a cut lands: a hard point */
+.cursor[data-mode="slash"] {
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  background: var(--ring);
+}
+@media (hover: none), (pointer: coarse) {
+  .cursor {
+    display: none;
+  }
+}
+
+/* ───────────── the sentence ───────────── */
+
+.sentence {
+  font-family: var(--font-display), "Century Schoolbook", Georgia, serif;
+  font-size: clamp(1.15rem, 0.9rem + 1vw, 1.6rem);
+  line-height: 1.5;
+  letter-spacing: 0.005em;
+  text-wrap: balance;
+}
+.word {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.32em;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+.dot {
+  position: relative;
+  display: inline-block;
+  width: 0.62em;
+  height: 0.62em;
+  border-radius: 50%;
+  background: #fff;
+  transform: translateY(-0.02em);
+  transition: transform 220ms var(--ease-out);
+}
+/* a finger needs more than a 13px target */
+.dot::after,
+.inkdot > button::after {
+  content: "";
+  position: absolute;
+  inset: -17px;
+  border-radius: 50%;
+}
+.dot:active {
+  transform: scale(0.82);
+}
+
+.fade {
+  transition: opacity 320ms ease;
+}
+.fade[data-hide="true"] {
+  opacity: 0;
+  pointer-events: none;
+}
+.fade[data-hide="true"] * {
+  pointer-events: none !important;
+}
+/* the sentence steps aside for the blob names, but comes back for keyboard users */
+.sentence-wrap[data-hide="true"]:focus-within {
+  opacity: 1;
+}
+
+/* ───────────── cards over the swollen blob ───────────── */
+
+.cards {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  color: var(--ink);
+}
+
+.wcard {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: var(--h);
+  max-height: calc(100vh - var(--y) - 3vh);
+  border-radius: var(--r);
+  background: #ececec;
+  overflow: hidden;
+  /* no drop shadow: a hairline edge separates a card from the one under it */
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.18);
+  transform-origin: calc(var(--ox) - var(--x)) calc(var(--oy) - var(--y));
+  animation: card-in 420ms var(--ease-out) both;
+  animation-delay: var(--delay, 0ms);
+  transition:
+    filter 300ms ease,
+    transform 300ms var(--ease-out);
+  outline: none;
+}
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+/* cards underneath sink back and wait */
+.wcard[data-top="false"] {
+  filter: brightness(0.72);
+  transform: scale(0.985);
+}
+.wcard-scroll {
+  height: 100%;
+  max-height: inherit;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 clamp(14px, 1.6vw, 22px) clamp(18px, 2vw, 28px);
+  scrollbar-color: #9a9a96 transparent;
+  scrollbar-width: thin;
+}
+.wcard[data-round="true"] .wcard-scroll {
+  overflow: hidden;
+  padding: 0;
+}
+.wcard-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0 12px;
+  margin-bottom: 6px;
+  background: #ececec;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.wcard-close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: -6px -6px -6px 0;
+  border-radius: 50%;
+}
+.wcard-close span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: transform 180ms var(--ease-out);
+}
+.wcard-close:active span {
+  transform: scale(0.8);
+}
+
+/* plain words, then the dot that is the link, in ink */
+.inkdot > button {
+  position: relative;
+  display: inline-block;
+  width: 0.6em;
+  height: 0.6em;
+  margin-left: 0.28em;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: transform 200ms var(--ease-out);
+}
+.inkdot > button:active {
+  transform: scale(0.8);
+}
+
+.bullet {
+  position: relative;
+  padding-left: 1.1rem;
+}
+.bullet::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.68em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+/* project tiles: pinned unevenly across a 12-column sheet */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 12px;
+  row-gap: clamp(28px, 5vh, 56px);
+  padding-bottom: 12px;
+}
+.tile {
+  grid-column: var(--col);
+  grid-row: var(--row);
+}
+.tile-art {
+  display: flex;
+  align-items: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 4px;
+  transition: transform 260ms var(--ease-out);
+}
+.tile-art span {
+  font-weight: 800;
+  font-size: clamp(2.4rem, 5.2vw, 4.6rem);
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+  text-transform: uppercase;
+  margin-left: -0.04em;
+}
+.tile:active .tile-art {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .inkdot > button:hover,
+  .wcard-close:hover span {
+    transform: scale(1.35);
+  }
+  .tile:hover .tile-art {
+    transform: scale(1.03);
+  }
+}
+
+/* phones: every card is a near-full-width sheet, stepped down the stack */
+@media (max-width: 760px) {
+  .wcard {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    top: 0;
+    margin-top: calc(64px + var(--step, 0px));
+    height: auto;
+    max-height: calc(100dvh - 84px - var(--step, 0px));
+    border-radius: 10px;
+    transform-origin: 50% 30%;
+  }
+  .wcard[data-round="true"] {
+    height: auto;
+    border-radius: 28px;
+  }
+  .wcard[data-round="true"] .wcard-scroll {
+    padding: 36px 12px;
+  }
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 22px;
+  }
+  .tile {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.5em 1em;
+  font-size: 0.875rem;
+  line-height: 1;
+  text-decoration: none !important;
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 160ms ease,
+    color 160ms ease;
+}
+.pill:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .pill:hover {
+    background: var(--ink);
+    color: #ececec;
+  }
+  .pill-dark:hover {
+    background: #fff;
+    color: #000;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wcard {
+    animation: none;
+    transition: none;
+  }
+  .cursor,
+  .dot {
+    transition: none;
+  }
+}
+
+/* the dot the cursor is caught on fills with the cursor's violet */
+.dot[data-caught],
+.inkdot > button[data-caught],
+.wcard-close span[data-caught] {
+  background: var(--ring);
+  box-shadow: 0 0 10px var(--ring-glow);
+  transition:
+    transform 200ms var(--ease-out),
+    background-color 160ms ease;
+}
+
+/* letters still scrambling glow purple, then settle to the text colour */
+.glyph {
+  color: var(--ring);
+  text-shadow: 0 0 6px var(--ring-glow);
+}
+
+/* Skip link: out of sight until the first Tab, then over the name, never pushing it */
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  z-index: 70;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: #ececec;
+  color: #000;
+  font-size: 14px;
+  font-weight: 600;
+  transform: translateY(-160%);
+}
+.skip-link:focus-visible {
+  transform: none;
+}
+
+/* the sentence and the hint sit over the lit blob: a soft shadow keeps them readable on any part of it */
+.sentence {
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.55),
+    0 0 18px rgb(0 0 0 / 0.5);
+}
+.hint {
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
+}
+
+/* small text controls get a 44px tap target without changing how they look */
+.hit {
+  position: relative;
+}
+.hit::after {
+  content: "";
+  position: absolute;
+  inset: -14px -8px;
+}
+
+/* ───────────── ask the blob ───────────── */
+
+.ask {
+  bottom: clamp(84px, 12vh, 130px);
+}
+.ask-answer {
+  max-width: min(560px, 100%);
+  margin-bottom: 14px;
+  text-align: center;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(1rem, 0.9rem + 0.35vw, 1.2rem);
+  line-height: 1.45;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
+}
+.ask-q {
+  margin-bottom: 6px;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.8rem;
+  color: rgb(255 255 255 / 0.55);
+}
+.ask-clear {
+  position: relative;
+  margin-top: 10px;
+  width: 10px;
+  height: 10px;
+}
+.ask-clear span {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+.ask-clear::after {
+  content: "";
+  position: absolute;
+  inset: -17px;
+}
+.ask-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(360px, 100%);
+  padding: 4px 6px 4px 16px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  background: rgb(0 0 0 / 0.55);
+  transition: border-color 160ms ease;
+}
+.ask-form:focus-within {
+  border-color: var(--ring);
+}
+.ask-form input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  background: transparent;
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+}
+.ask-form input::placeholder {
+  color: rgb(255 255 255 / 0.5);
+}
+.ask-send {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+}
+.ask-send span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 160ms var(--ease-out), background-color 160ms ease;
+}
+.ask-send:active span {
+  transform: scale(0.8);
+}
+.ask-send:disabled span {
+  background: rgb(255 255 255 / 0.35);
+}
+.ask-send::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+@media (max-width: 640px) {
+  .ask {
+    bottom: 104px;
+  }
+}
